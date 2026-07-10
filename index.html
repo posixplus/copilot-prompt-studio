@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copilot Prompt Studio</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --ink:#1a2233; --muted:#5b6478;
+    --accent:#4c5fd5; --accent-dark:#3a49b0; --accent-soft:#eef0fc;
+    --border:#dfe4ef; --good:#177245; --radius:14px;
+    --mono:'SF Mono',Consolas,'Cascadia Code',Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+  header{background:linear-gradient(120deg,#2b3a8f,#4c5fd5 55%,#7b6cf0);color:#fff;padding:28px 24px}
+  header .wrap{max-width:1200px;margin:0 auto}
+  header h1{font-size:1.55rem;font-weight:650;letter-spacing:.2px}
+  header p{opacity:.92;margin-top:6px;font-size:.95rem;max-width:720px}
+  .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:2px 12px;font-size:.75rem;margin-bottom:10px;letter-spacing:.5px;text-transform:uppercase}
+  main{max-width:1200px;margin:24px auto;padding:0 24px;display:grid;grid-template-columns:minmax(340px,1fr) minmax(380px,1fr);gap:22px;align-items:start}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:0 1px 3px rgba(20,30,70,.06)}
+  .card+.card{margin-top:18px}
+  h2{font-size:.8rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;font-weight:700}
+  .seg{display:flex;flex-wrap:wrap;gap:8px}
+  .seg button{flex:1 1 auto;min-width:110px;padding:10px 12px;border:1.5px solid var(--border);background:#fff;border-radius:10px;cursor:pointer;font-size:.86rem;font-weight:600;color:var(--muted);transition:.15s}
+  .seg button.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dark)}
+  .seg button:hover{border-color:var(--accent)}
+  .seg button small{display:block;font-weight:400;font-size:.72rem;margin-top:2px}
+  label.f{display:block;font-size:.82rem;font-weight:600;margin:14px 0 5px;color:var(--ink)}
+  input[type=text],textarea,select{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:.9rem;font-family:inherit;background:#fff;color:var(--ink)}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  textarea{resize:vertical;min-height:64px}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+  @media(max-width:520px){.checks{grid-template-columns:1fr}}
+  .chk{display:flex;align-items:flex-start;gap:8px;font-size:.84rem;padding:8px 10px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:.15s}
+  .chk:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+  .chk input{margin-top:2px;accent-color:var(--accent)}
+  .hint{font-size:.76rem;color:var(--muted);margin-top:4px}
+  .preview-wrap{position:sticky;top:16px}
+  #preview{font-family:var(--mono);font-size:.8rem;white-space:pre-wrap;background:#0f1530;color:#dce3ff;border-radius:11px;padding:18px;max-height:560px;overflow:auto;line-height:1.55}
+  .pv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+  .pv-head .meta{font-size:.76rem;color:var(--muted)}
+  #copyBtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:10px 22px;font-size:.9rem;font-weight:650;cursor:pointer;transition:.15s}
+  #copyBtn:hover{background:var(--accent-dark)}
+  #copyBtn.copied{background:var(--good)}
+  .steps{counter-reset:s;font-size:.84rem;color:var(--muted)}
+  .steps li{list-style:none;margin:8px 0;padding-left:30px;position:relative}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:0;width:20px;height:20px;background:var(--accent-soft);color:var(--accent-dark);border-radius:50%;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+  details{border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:.85rem}
+  details summary{cursor:pointer;font-weight:650;color:var(--accent-dark)}
+  details p,details ul{margin-top:8px;color:var(--muted)}
+  details ul{padding-left:18px}
+  details li{margin:4px 0}
+  footer{max-width:1200px;margin:10px auto 40px;padding:0 24px;font-size:.75rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="badge">Microsoft 365 Copilot helper</span>
+    <h1>Copilot Prompt Studio</h1>
+    <p>Copilot gives vague summaries because it gets vague prompts. Pick your task, set your options, and copy a precision-built prompt that forces accurate, well-formatted output.</p>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="card">
+      <h2>1 &middot; Where are you using Copilot?</h2>
+      <div class="seg" id="surfaceSeg">
+        <button data-v="word" class="active">Word / Office app<small>Copilot pane in the open document</small></button>
+        <button data-v="chat">Copilot Chat<small>M365 chat with attached files</small></button>
+        <button data-v="teams">Teams meeting<small>Recap or transcript</small></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2 &middot; What do you need?</h2>
+      <div class="seg" id="taskSeg">
+        <button data-v="summary" class="active">Document summary</button>
+        <button data-v="meeting">Meeting recap</button>
+        <button data-v="email">Follow-up email</button>
+        <button data-v="custom">Custom task</button>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="pane" id="pane-summary">
+        <label class="f">Document name / description (optional)</label>
+        <input type="text" id="s_doc" placeholder="e.g. Q3 vendor contract, project proposal.pdf">
+        <label class="f">Who is the summary for?</label>
+        <select id="s_aud">
+          <option value="a busy executive who will spend 60 seconds reading it">Executive (60-second read)</option>
+          <option value="my team, who needs enough detail to act without reading the source">My team (working detail)</option>
+          <option value="a technical reviewer who cares about specifics and exact figures">Technical reviewer (deep detail)</option>
+          <option value="someone with no prior context on this topic">Someone with zero context</option>
+        </select>
+        <label class="f">Length</label>
+        <select id="s_len">
+          <option value="a single paragraph of no more than 5 sentences">One paragraph (max 5 sentences)</option>
+          <option value="roughly half a page" selected>Half a page</option>
+          <option value="up to one full page">Up to one page</option>
+          <option value="7 to 10 bullet points, each one sentence">7-10 one-line bullets</option>
+        </select>
+        <label class="f">Sections to include</label>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" id="s_key" checked> Key points</label>
+          <label class="chk"><input type="checkbox" id="s_num" checked> Numbers, dates &amp; figures (verbatim)</label>
+          <label class="chk"><input type="checkbox" id="s_risk"> Risks / concerns</label>
+          <label class="chk"><input type="checkbox" id="s_rec"> Recommendations / next steps</label>
+          <label class="chk"><input type="checkbox" id="s_open"> Open questions</label>
+          <label class="chk"><input type="checkbox" id="s_quote"> Notable quotes (exact wording)</label>
+        </div>
+        <label class="f">Focus areas (optional)</label>
+        <input type="text" id="s_focus" placeholder="e.g. pricing terms, deadlines, liability clauses">
+        <label class="chk" style="margin-top:12px"><input type="checkbox" id="s_long"> Long document (30+ pages): add section-by-section instructions</label>
+      </div>
+
+      <!-- MEETING -->
+      <div class="pane" id="pane-meeting" hidden>
+        <label class="f">Meeting name (optional)</label>
+        <input type="text" id="m_name" placeholder="e.g. Weekly product sync, client kickoff call">
+        <label class="f">Include</label>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" id="m_dec" checked> Decisions made</label>
+          <label class="chk"><input type="checkbox" id="m_act" checked> Action items (owner + due date)</label>
+          <label class="chk"><input type="checkbox" id="m_open" checked> Open questions / parked items</label>
+          <label class="chk"><input type="checkbox" id="m_disc"> Key discussion points</label>
+          <label class="chk"><input type="checkbox" id="m_risk"> Risks or blockers raised</label>
+          <label class="chk"><input type="checkbox" id="m_next"> Agreed next meeting / follow-ups</label>
+        </div>
+        <label class="f">Anything specific to focus on? (optional)</label>
+        <input type="text" id="m_focus" placeholder="e.g. only items relating to the Q4 launch">
+      </div>
+
+      <!-- EMAIL -->
+      <div class="pane" id="pane-email" hidden>
+        <label class="f">This email is based on</label>
+        <select id="e_src">
+          <option value="the meeting transcript/recap">A meeting (recap or transcript)</option>
+          <option value="the attached/open document">A document</option>
+          <option value="the email thread">An email thread</option>
+        </select>
+        <label class="f">Recipient(s)</label>
+        <input type="text" id="e_to" placeholder="e.g. the client team, my manager, all attendees">
+        <label class="f">Purpose</label>
+        <select id="e_purpose">
+          <option value="summarize outcomes and confirm the action items with owners and deadlines">Confirm outcomes + action items</option>
+          <option value="provide a status update">Status update</option>
+          <option value="request a decision or approval, clearly stating what is needed and by when">Request a decision/approval</option>
+          <option value="thank them and outline agreed next steps">Thank you + next steps</option>
+        </select>
+        <label class="f">Tone</label>
+        <select id="e_tone">
+          <option value="professional and concise">Professional, concise</option>
+          <option value="warm but businesslike">Warm, businesslike</option>
+          <option value="direct and to the point, no pleasantries beyond one opening line">Direct, minimal pleasantries</option>
+          <option value="formal">Formal</option>
+        </select>
+        <label class="f">Must-mention points (optional)</label>
+        <textarea id="e_points" placeholder="e.g. remind them the contract deadline is July 20"></textarea>
+      </div>
+
+      <!-- CUSTOM -->
+      <div class="pane" id="pane-custom" hidden>
+        <label class="f">Describe what you want Copilot to do</label>
+        <textarea id="c_task" placeholder="e.g. Compare the two attached proposals and tell me which has better payment terms"></textarea>
+        <label class="f">Desired output format</label>
+        <select id="c_fmt">
+          <option value="structured with clear headings and bullet points">Headings + bullets</option>
+          <option value="a table">A table</option>
+          <option value="numbered steps">Numbered steps</option>
+          <option value="plain paragraphs">Plain paragraphs</option>
+        </select>
+        <label class="f">Constraints (optional)</label>
+        <input type="text" id="c_rules" placeholder="e.g. max 300 words, UK English, no jargon">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3 &middot; Accuracy guardrails (recommended: keep all on)</h2>
+      <div class="checks">
+        <label class="chk"><input type="checkbox" id="g_ground" checked> Source-only: no outside info or guessing</label>
+        <label class="chk"><input type="checkbox" id="g_gap" checked> Say "Not stated in the source" for gaps</label>
+        <label class="chk"><input type="checkbox" id="g_verbatim" checked> Quote figures, dates &amp; names verbatim</label>
+        <label class="chk"><input type="checkbox" id="g_cite" checked> Reference the section/page for key claims</label>
+      </div>
+      <p class="hint">These four lines are what stop Copilot from inventing details. They are the core fix for inaccurate summaries.</p>
+    </div>
+  </section>
+
+  <section class="preview-wrap">
+    <div class="card">
+      <div class="pv-head">
+        <div>
+          <h2 style="margin-bottom:2px">Your Copilot prompt</h2>
+          <span class="meta" id="charCount"></span>
+        </div>
+        <button id="copyBtn">Copy prompt</button>
+      </div>
+      <div id="preview"></div>
+    </div>
+    <div class="card">
+      <h2>How to use</h2>
+      <ol class="steps">
+        <li id="use-step-1">Open the document in Word and open the Copilot pane.</li>
+        <li>Click <strong>Copy prompt</strong> above and paste it into Copilot.</li>
+        <li>Check the output against the guardrails: if it flags gaps, that is working as intended.</li>
+        <li>If anything looks off, reply: "Re-check point 2 against the source and quote the exact text it comes from."</li>
+      </ol>
+      <details>
+        <summary>Why Copilot summaries go wrong (and how this fixes it)</summary>
+        <ul>
+          <li><strong>Vague ask:</strong> "Summarize this" lets Copilot pick its own scope and depth. Fix: explicit audience, length and sections.</li>
+          <li><strong>Hallucinated detail:</strong> Copilot fills gaps with plausible-sounding text. Fix: source-only rule + "Not stated in the source".</li>
+          <li><strong>Mangled numbers:</strong> Figures get rounded or paraphrased. Fix: verbatim rule.</li>
+          <li><strong>Long docs truncated:</strong> Copilot may only deeply read part of a very long file. Fix: the long-document mode asks for a section-by-section pass first.</li>
+          <li><strong>Format drift:</strong> Without a schema it outputs walls of text. Fix: a fixed heading/table structure.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Extra tips for your friend</summary>
+        <ul>
+          <li>In Copilot Chat, attach the file directly (paperclip or type <strong>/</strong> and pick the file) instead of describing it.</li>
+          <li>One task per prompt. Summary first, then follow-up email as a second prompt.</li>
+          <li>If Copilot answers from general knowledge, reply: "Only use the attached file. Discard everything else."</li>
+          <li>For scanned PDFs with poor text, Copilot may see garbage. Check the PDF has selectable text.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+</main>
+<footer>Copilot Prompt Studio &middot; Built for reliable Microsoft 365 Copilot output. No data leaves your browser: everything runs locally on this page.</footer>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  let surface='word', task='summary';
+
+  function seg(id,cb){
+    const el=$(id);
+    el.addEventListener('click',e=>{
+      const b=e.target.closest('button'); if(!b)return;
+      el.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); cb(b.dataset.v); render();
+    });
+  }
+  seg('surfaceSeg',v=>surface=v);
+  seg('taskSeg',v=>{
+    task=v;
+    ['summary','meeting','email','custom'].forEach(p=>$('pane-'+p).hidden=(p!==v));
+  });
+
+  document.querySelectorAll('input,select,textarea').forEach(el=>{
+    el.addEventListener('input',render); el.addEventListener('change',render);
+  });
+
+  function srcRef(){
+    if(surface==='word') return 'the document currently open in this window';
+    if(surface==='chat') return 'the attached file';
+    return 'the transcript and recap of this meeting';
+  }
+
+  function guardrails(){
+    const g=[];
+    if($('g_ground').checked) g.push('Use ONLY the content of '+srcRef()+'. Do not add outside knowledge, assumptions, or invented details.');
+    if($('g_gap').checked) g.push('If something I ask for is not present in the source, write exactly: "Not stated in the source." Never guess.');
+    if($('g_verbatim').checked) g.push('Reproduce all numbers, dates, amounts, and names VERBATIM as written in the source. Do not round, convert, or paraphrase them.');
+    if($('g_cite').checked) g.push('For each key claim, note where it comes from (section heading, page number, or speaker).');
+    return g;
+  }
+
+  function buildSummary(){
+    const doc=$('s_doc').value.trim(), focus=$('s_focus').value.trim();
+    const secs=[];
+    if($('s_key').checked) secs.push('## Key points - the essential takeaways as bullets');
+    if($('s_num').checked) secs.push('## Figures and dates - every important number, amount, date, and deadline, quoted verbatim');
+    if($('s_risk').checked) secs.push('## Risks and concerns - anything flagged as a problem, risk, or caveat');
+    if($('s_rec').checked) secs.push('## Recommendations and next steps - what the source says should happen next');
+    if($('s_open').checked) secs.push('## Open questions - unresolved items or ambiguities in the source');
+    if($('s_quote').checked) secs.push('## Notable quotes - short exact quotes that matter, in quotation marks');
+    let p='You are a careful document analyst. Summarize '+srcRef()+(doc?' ("'+doc+'")':'')+'.\n\n';
+    p+='AUDIENCE: Write for '+$('s_aud').value+'.\n';
+    p+='LENGTH: Keep the summary to '+$('s_len').value+'.\n';
+    if(focus) p+='FOCUS: Pay particular attention to: '+focus+'.\n';
+    if(secs.length) p+='\nSTRUCTURE - use exactly these markdown sections, in this order:\n'+secs.join('\n')+'\n';
+    if($('s_long').checked) p+='\nLONG DOCUMENT MODE: First list every major section or chapter with a one-line description each. Then produce the summary above, making sure every section is represented. Tell me explicitly if any part of the document could not be read.\n';
+    return p;
+  }
+
+  function buildMeeting(){
+    const name=$('m_name').value.trim(), focus=$('m_focus').value.trim();
+    const secs=[];
+    if($('m_dec').checked) secs.push('## Decisions made - each decision as one bullet: what was decided and who decided it');
+    if($('m_act').checked) secs.push('## Action items - a markdown table with columns: Action | Owner | Due date | Stated in meeting? (Yes / Inferred). If owner or due date was not mentioned, write "Not stated in the source."');
+    if($('m_open').checked) secs.push('## Open questions - unresolved or parked items');
+    if($('m_disc').checked) secs.push('## Key discussion points - the main topics debated and the positions taken');
+    if($('m_risk').checked) secs.push('## Risks and blockers - any risk, blocker, or concern raised, with who raised it');
+    if($('m_next').checked) secs.push('## Follow-ups - agreed next meetings or check-ins with dates if mentioned');
+    let p='You are a precise minute-taker. Create structured meeting notes from '+srcRef()+(name?' for "'+name+'"':'')+'.\n';
+    if(focus) p+='\nSCOPE: Only include items relating to: '+focus+'.\n';
+    if(secs.length) p+='\nSTRUCTURE - use exactly these markdown sections, in this order:\n'+secs.join('\n')+'\n';
+    p+='\nDo not merge separate action items. Attribute statements to the correct speaker. If speakers are unlabeled, say so rather than guessing names.\n';
+    return p;
+  }
+
+  function buildEmail(){
+    const to=$('e_to').value.trim()||'the recipients', pts=$('e_points').value.trim();
+    let p='You are helping me write a follow-up email based on '+$('e_src').value+'.\n\n';
+    p+='TO: '+to+'\n';
+    p+='PURPOSE: '+$('e_purpose').value+'.\n';
+    p+='TONE: '+$('e_tone').value+'.\n';
+    if(pts) p+='MUST MENTION: '+pts+'\n';
+    p+='\nSTRUCTURE:\n- Subject line (specific, under 9 words)\n- One-line opener\n- Body in short paragraphs or bullets, no fluff\n- Clear closing line stating what I need from them and by when (only if a deadline exists in the source)\n\nBase every factual statement on the source. Do not commit me to anything that was not actually agreed.\n';
+    return p;
+  }
+
+  function buildCustom(){
+    const t=$('c_task').value.trim()||'[describe your task above]';
+    const rules=$('c_rules').value.trim();
+    let p='TASK: '+t+'\n\nSOURCE: Work from '+srcRef()+'.\n';
+    p+='OUTPUT FORMAT: Present the result as '+$('c_fmt').value+'.\n';
+    if(rules) p+='CONSTRAINTS: '+rules+'\n';
+    return p;
+  }
+
+  function render(){
+    let p;
+    if(task==='summary')p=buildSummary();
+    else if(task==='meeting')p=buildMeeting();
+    else if(task==='email')p=buildEmail();
+    else p=buildCustom();
+    const g=guardrails();
+    if(g.length) p+='\nACCURACY RULES (non-negotiable):\n'+g.map(x=>'- '+x).join('\n')+'\n';
+    p+='\nBefore you answer, re-read these instructions and follow the structure exactly.';
+    $('preview').textContent=p;
+    $('charCount').textContent=p.length+' characters';
+    $('use-step-1').innerHTML = surface==='word'
+      ? 'Open the document in Word (or the Office app) and open the Copilot pane.'
+      : surface==='chat'
+      ? 'Open Copilot Chat and <strong>attach the file first</strong> (paperclip icon, or type <strong>/</strong> and select it).'
+      : 'Open the Teams meeting recap page (Recap tab) where Copilot can see the transcript.';
+  }
+
+  $('copyBtn').addEventListener('click',()=>{
+    navigator.clipboard.writeText($('preview').textContent).then(()=>{
+      const b=$('copyBtn'); b.textContent='Copied!'; b.classList.add('copied');
+      setTimeout(()=>{b.textContent='Copy prompt'; b.classList.remove('copied');},1600);
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
