@@ -88,13 +88,13 @@
       <!-- SUMMARY -->
       <div class="pane" id="pane-summary">
         <label class="f">Document name / description (optional)</label>
-        <input type="text" id="s_doc" placeholder="e.g. Q3 vendor contract, project proposal.pdf">
+        <input type="text" id="s_doc" placeholder="e.g. change request, incident report, runbook.pdf, architecture review">
         <label class="f">Who is the summary for?</label>
         <select id="s_aud">
-          <option value="a busy executive who will spend 60 seconds reading it">Executive (60-second read)</option>
-          <option value="my team, who needs enough detail to act without reading the source">My team (working detail)</option>
-          <option value="a technical reviewer who cares about specifics and exact figures">Technical reviewer (deep detail)</option>
-          <option value="someone with no prior context on this topic">Someone with zero context</option>
+          <option value="IT leadership, who will spend 60 seconds reading it and cares about impact, risk, and dates">IT leadership (60-second read)</option>
+          <option value="my infrastructure and applications team, who needs enough technical detail to act without reading the source">My team (working detail)</option>
+          <option value="a technical reviewer who cares about exact configurations, versions, server names, and figures">Technical reviewer (deep detail)</option>
+          <option value="non-technical stakeholders with no IT background, so avoid jargon or explain it">Non-technical stakeholders</option>
         </select>
         <label class="f">Length</label>
         <select id="s_len">
@@ -110,17 +110,17 @@
           <label class="chk"><input type="checkbox" id="s_risk"> Risks / concerns</label>
           <label class="chk"><input type="checkbox" id="s_rec"> Recommendations / next steps</label>
           <label class="chk"><input type="checkbox" id="s_open"> Open questions</label>
-          <label class="chk"><input type="checkbox" id="s_quote"> Notable quotes (exact wording)</label>
+          <label class="chk"><input type="checkbox" id="s_sys"> Impacted systems &amp; dependencies</label>
         </div>
         <label class="f">Focus areas (optional)</label>
-        <input type="text" id="s_focus" placeholder="e.g. pricing terms, deadlines, liability clauses">
+        <input type="text" id="s_focus" placeholder="e.g. outage impact, migration steps, rollback plan, deadlines">
         <label class="chk" style="margin-top:12px"><input type="checkbox" id="s_long"> Long document (30+ pages): add section-by-section instructions</label>
       </div>
 
       <!-- MEETING -->
       <div class="pane" id="pane-meeting" hidden>
         <label class="f">Meeting name (optional)</label>
-        <input type="text" id="m_name" placeholder="e.g. Weekly product sync, client kickoff call">
+        <input type="text" id="m_name" placeholder="e.g. CAB / change advisory board, incident bridge, sprint sync, vendor status call">
         <label class="f">Include</label>
         <div class="checks">
           <label class="chk"><input type="checkbox" id="m_dec" checked> Decisions made</label>
@@ -128,10 +128,11 @@
           <label class="chk"><input type="checkbox" id="m_open" checked> Open questions / parked items</label>
           <label class="chk"><input type="checkbox" id="m_disc"> Key discussion points</label>
           <label class="chk"><input type="checkbox" id="m_risk"> Risks or blockers raised</label>
+          <label class="chk"><input type="checkbox" id="m_chg"> Changes approved / scheduled (window + rollback)</label>
           <label class="chk"><input type="checkbox" id="m_next"> Agreed next meeting / follow-ups</label>
         </div>
         <label class="f">Anything specific to focus on? (optional)</label>
-        <input type="text" id="m_focus" placeholder="e.g. only items relating to the Q4 launch">
+        <input type="text" id="m_focus" placeholder="e.g. only items relating to the datacenter migration or the ServiceNow rollout">
       </div>
 
       <!-- EMAIL -->
@@ -143,12 +144,13 @@
           <option value="the email thread">An email thread</option>
         </select>
         <label class="f">Recipient(s)</label>
-        <input type="text" id="e_to" placeholder="e.g. the client team, my manager, all attendees">
+        <input type="text" id="e_to" placeholder="e.g. the app support team, my manager, service desk, all attendees">
         <label class="f">Purpose</label>
         <select id="e_purpose">
           <option value="summarize outcomes and confirm the action items with owners and deadlines">Confirm outcomes + action items</option>
-          <option value="provide a status update">Status update</option>
-          <option value="request a decision or approval, clearly stating what is needed and by when">Request a decision/approval</option>
+          <option value="provide a project or task status update">Status update</option>
+          <option value="request a decision or approval (e.g. change approval), clearly stating what is needed and by when">Request a decision/approval</option>
+          <option value="give an incident or escalation update: current status, impact, what has been done, and next update time">Incident / escalation update</option>
           <option value="thank them and outline agreed next steps">Thank you + next steps</option>
         </select>
         <label class="f">Tone</label>
@@ -159,13 +161,13 @@
           <option value="formal">Formal</option>
         </select>
         <label class="f">Must-mention points (optional)</label>
-        <textarea id="e_points" placeholder="e.g. remind them the contract deadline is July 20"></textarea>
+        <textarea id="e_points" placeholder="e.g. remind them the change window is Saturday 10 PM to 2 AM"></textarea>
       </div>
 
       <!-- CUSTOM -->
       <div class="pane" id="pane-custom" hidden>
         <label class="f">Describe what you want Copilot to do</label>
-        <textarea id="c_task" placeholder="e.g. Compare the two attached proposals and tell me which has better payment terms"></textarea>
+        <textarea id="c_task" placeholder="e.g. Extract all server names, environments, and dependencies from the attached migration plan into a table"></textarea>
         <label class="f">Desired output format</label>
         <select id="c_fmt">
           <option value="structured with clear headings and bullet points">Headings + bullets</option>
@@ -279,8 +281,8 @@
     if($('s_risk').checked) secs.push('## Risks and concerns - anything flagged as a problem, risk, or caveat');
     if($('s_rec').checked) secs.push('## Recommendations and next steps - what the source says should happen next');
     if($('s_open').checked) secs.push('## Open questions - unresolved items or ambiguities in the source');
-    if($('s_quote').checked) secs.push('## Notable quotes - short exact quotes that matter, in quotation marks');
-    let p='You are a careful document analyst. Summarize '+srcRef()+(doc?' ("'+doc+'")':'')+'.\n\n';
+    if($('s_sys').checked) secs.push('## Impacted systems and dependencies - every system, server, application, environment, or service mentioned, and how they depend on or affect each other');
+    let p='You are a careful analyst on an IT infrastructure and applications team. Summarize '+srcRef()+(doc?' ("'+doc+'")':'')+'. Preserve technical terms exactly (system names, server names, versions, environments); do not simplify them away.\n\n';
     p+='AUDIENCE: Write for '+$('s_aud').value+'.\n';
     p+='LENGTH: Keep the summary to '+$('s_len').value+'.\n';
     if(focus) p+='FOCUS: Pay particular attention to: '+focus+'.\n';
@@ -297,8 +299,9 @@
     if($('m_open').checked) secs.push('## Open questions - unresolved or parked items');
     if($('m_disc').checked) secs.push('## Key discussion points - the main topics debated and the positions taken');
     if($('m_risk').checked) secs.push('## Risks and blockers - any risk, blocker, or concern raised, with who raised it');
+    if($('m_chg').checked) secs.push('## Changes approved or scheduled - each change with its change window, affected systems, and rollback plan as stated; mark anything not mentioned as "Not stated in the source."');
     if($('m_next').checked) secs.push('## Follow-ups - agreed next meetings or check-ins with dates if mentioned');
-    let p='You are a precise minute-taker. Create structured meeting notes from '+srcRef()+(name?' for "'+name+'"':'')+'.\n';
+    let p='You are a precise minute-taker for IT meetings. Create structured meeting notes from '+srcRef()+(name?' for "'+name+'"':'')+'. Keep system names, ticket numbers, and change IDs exactly as spoken.\n';
     if(focus) p+='\nSCOPE: Only include items relating to: '+focus+'.\n';
     if(secs.length) p+='\nSTRUCTURE - use exactly these markdown sections, in this order:\n'+secs.join('\n')+'\n';
     p+='\nDo not merge separate action items. Attribute statements to the correct speaker. If speakers are unlabeled, say so rather than guessing names.\n';
